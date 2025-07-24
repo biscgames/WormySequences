@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roz</title>
+    <link rel="stylesheet" media="screen" href="https://fontlibrary.org//face/roboto-old" type="text/css"/> 
+    <style>
+        @keyframes context-menu-show {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        @keyframes dialog-show {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        @keyframes context-menu-hide {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+        @keyframes context-menu-button-click {
+            from {
+                background-color: rgb(73, 146, 255);
+            }
+            to {
+                background-color: #FFFF;
+            }
+        }
+        body {
+            background-color: rgb(155, 155, 155);
+            margin: 0px;
+        }
+        .horizontal-container {
+            background-color: white;
+            height: 80px;
+            width: 100vw;
+        }
+        .dialog {
+            position: fixed !important;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            width: 512px;
+            height: 250px;
+            border-radius: 12px;
+            padding: 10px;
+            animation: dialog-show ease-out 200ms;
+            box-shadow: 0px 5px 100px 2px;
+        }
+        .horizontal-container#options {
+            border-radius: 48px;
+        }
+        .horizontal-container#toolbar {
+            height: 32px;
+            margin-bottom: 24px;
+        }
+        .horizontal-container>span {
+            color: black;
+            font-family: "RobotoRegular";
+            font-weight: normal;
+            font-style: normal;
+            user-select: none;
+            font-size:larger;
+        }
+        body>span {
+            color: white;
+            font-family: "RobotoRegular";
+            font-weight: normal;
+            font-style: normal;
+            user-select: none;
+            font-size:larger;
+        }
+        .context-menu {
+            position: fixed !important;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            width: 180px;
+            border-radius: 12px;
+            padding: 10px;
+            animation: context-menu-show 200ms;
+            box-shadow: 0px 5px 100px 2px;
+        }
+        .context-menu-button {
+            color: black;
+            font-family: "RobotoRegular";
+            font-weight: normal;
+            font-style: normal;
+            user-select: none;
+            -webkit-user-drag: none;
+            margin-right: 10px;
+            font-size:larger;
+        }
+        .dialog>input {
+            color: black;
+            font-family: "RobotoRegular";
+            font-weight: normal;
+            font-style: normal;
+            margin-top:20px;
+            margin-bottom:40px;
+            font-size:larger;
+        }
+    </style>
+</head>
+<body>
+    <div id="toolbar" class="horizontal-container"><span id="project">Project</span></div>
+    <div id="options" class="horizontal-container"></div>
+    <template id="contextMenuButton">
+        <span class="context-menu-button">Import Project</span>
+    </template>
+    <template id="contextMenu">
+        <div class="context-menu"></div>
+    </template>
+    <template id="dialog">
+        <div class="dialog">
+            <b class="context-menu-button" id="title">Are you sure?</b>
+            <span class="context-menu-button" id="ok">Yes, I'm sure</span>
+            <span class="context-menu-button" id="cancel">Nevermind</span>
+        </div>
+    </template>
+    <template id="prompt">
+        <div class="dialog">
+            <b class="context-menu-button" id="title">This is requesting input!</b>
+            <input placeholder="Enter something!" id="input"/>
+            <span class="context-menu-button" id="ok">Enter</span>
+            <span class="context-menu-button" id="cancel">Cancel</span>
+        </div>
+    </template>
+    <script src="script.js"></script>
+</body>
+</html>
