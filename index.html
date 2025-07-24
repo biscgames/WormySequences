@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roz</title>
+    <title>WormySequences</title>
     <link rel="stylesheet" media="screen" href="https://fontlibrary.org//face/roboto-old" type="text/css"/> 
     <style>
         @keyframes context-menu-show {
@@ -48,6 +48,14 @@
             background-color: white;
             height: 80px;
             width: 100vw;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        .vertical-container {
+            background-color: white;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
         }
         .dialog {
             position: fixed !important;
@@ -76,6 +84,7 @@
             font-style: normal;
             user-select: none;
             font-size:larger;
+            margin-right: 20px;
         }
         body>span {
             color: white;
@@ -116,11 +125,28 @@
             margin-bottom:40px;
             font-size:larger;
         }
+        .button-image {
+            width:64px;
+            height:64px;
+        }
     </style>
 </head>
 <body>
-    <div id="toolbar" class="horizontal-container"><span id="project">Project</span></div>
-    <div id="options" class="horizontal-container"></div>
+    <div id="toolbar" class="horizontal-container">
+        <span id="project">Project</span>
+        <span id="newInstrument">New Instrument</span>
+        <span id="sounds">Sounds</span>
+    </div>
+    <div id="options" class="horizontal-container">
+        <span id="seek">Step 0</span>
+        <img src="play.png" id="play" class="button-image"/>
+        <img src="fast_rewind.png" id="rewind" class="button-image"/>
+    </div>
+    <div id="channelRack" class="vertical-container">
+    </div>
+
+
+
     <template id="contextMenuButton">
         <span class="context-menu-button">Import Project</span>
     </template>
