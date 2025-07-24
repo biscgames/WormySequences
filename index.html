@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WormySequences</title>
+    <script src="https://unpkg.com/draggabilly@3/dist/draggabilly.pkgd.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
         @keyframes context-menu-show {
@@ -79,7 +80,7 @@
         }
         .horizontal-container>span {
             color: black;
-            font-family: "RobotoRegular";
+            font-family: "Roboto";
             font-weight: normal;
             font-style: normal;
             user-select: none;
@@ -88,7 +89,7 @@
         }
         body>span {
             color: white;
-            font-family: "RobotoRegular";
+            font-family: "Roboto";
             font-weight: normal;
             font-style: normal;
             user-select: none;
@@ -100,7 +101,9 @@
             display: flex;
             flex-direction: column;
             background-color: white;
-            width: 180px;
+            max-width: 220px;
+            max-height: 200px;
+            overflow-y: scroll;
             border-radius: 12px;
             padding: 10px;
             animation: context-menu-show 200ms;
@@ -108,7 +111,7 @@
         }
         .context-menu-button {
             color: black;
-            font-family: "RobotoRegular";
+            font-family: "Roboto";
             font-weight: normal;
             font-style: normal;
             user-select: none;
@@ -118,7 +121,7 @@
         }
         .dialog>input {
             color: black;
-            font-family: "RobotoRegular";
+            font-family: "Roboto";
             font-weight: normal;
             font-style: normal;
             margin-top:20px;
@@ -132,6 +135,7 @@
     </style>
 </head>
 <body>
+    <script src="draggabilly.js"></script>
     <div id="toolbar" class="horizontal-container">
         <span id="project">Project</span>
         <span id="newInstrument">New Instrument</span>
@@ -144,8 +148,6 @@
     </div>
     <div id="channelRack" class="vertical-container">
     </div>
-
-
 
     <template id="contextMenuButton">
         <span class="context-menu-button">Import Project</span>
@@ -164,6 +166,14 @@
         <div class="dialog">
             <b class="context-menu-button" id="title">This is requesting input!</b>
             <input placeholder="Enter something!" id="input"/>
+            <span class="context-menu-button" id="ok">Enter</span>
+            <span class="context-menu-button" id="cancel">Cancel</span>
+        </div>
+    </template>
+    <template id="txtareaPrompt">
+        <div class="dialog">
+            <b class="context-menu-button" id="title">This is requesting input!</b>
+            <textarea id="input"></textarea>
             <span class="context-menu-button" id="ok">Enter</span>
             <span class="context-menu-button" id="cancel">Cancel</span>
         </div>

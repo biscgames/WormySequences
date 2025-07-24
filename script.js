@@ -1,7 +1,8 @@
+window.AudioContext = window.AudioContext || window.webkitAudioContext;
+
 function openDialog(text,id="dialog") {
         const dialogTemplate = document.getElementById(id).content;
         const newDialogMenu = dialogTemplate.querySelector(".dialog").cloneNode(true);
-
         newDialogMenu.querySelector("#title").textContent = text;
         document.body.appendChild(newDialogMenu);
 
@@ -11,6 +12,8 @@ function openDialog(text,id="dialog") {
 
         const okButton = newDialogMenu.querySelector("#ok");
         const cancelButton = newDialogMenu.querySelector("#cancel");
+
+        new Draggabilly(newDialogMenu);
 
         return {newDialogMenu:newDialogMenu,okButton:okButton,cancelButton:cancelButton}
 }
@@ -36,9 +39,9 @@ function confirm(text) {
                 };
         })
 }
-function prompt(text) {
-        const {newDialogMenu,okButton,cancelButton} = openDialog(text,"prompt");
-        const editText = newDialogMenu.querySelector("input");
+function prompt(text,textarea=false) {
+        const {newDialogMenu,okButton,cancelButton} = openDialog(text,textarea?"txtareaPrompt":"prompt");
+        const editText = newDialogMenu.querySelector("#input");
         editText.focus();
 
         return new Promise(r=>{
@@ -53,7 +56,7 @@ function prompt(text) {
                         exitDialog();
                         r(editText.value);
                 };
-                editText.addEventListener("keydown",e=>{
+                if (!textarea) editText.addEventListener("keydown",e=>{
                         if (e.code !== "Enter") return;
                         okButton.style.animation = "context-menu-button-click 200ms";
                         exitDialog();
@@ -78,6 +81,7 @@ function _createContextMenu(buttons=[
                         r(-1);
                         return;
                 }
+
                 const contextMenuTemplate = document.getElementById("contextMenu").content;
                 const contextMenuButtonTemplate = document.getElementById("contextMenuButton").content;
 
@@ -100,6 +104,7 @@ function _createContextMenu(buttons=[
                         newContextMenu.appendChild(buttonElement);
                 }
                 document.body.appendChild(newContextMenu);
+                new Draggabilly(newContextMenu);
         })
 }
 
@@ -112,11 +117,12 @@ class Controller {
         values = [];
         state = 0;
         oneValue = false
-        constructor(modify,values=[],state=0,oneValue) {
+        constructor(modify,values=[],state=0,oneValue=false,toNumber=false) {
                 this.modify = modify;
                 this.values = values;
                 this.state = state;
                 this.oneValue = oneValue;
+                this.toNumber = toNumber;
         }
 }
 class WInstr {
@@ -130,6 +136,7 @@ class WInstr {
                         this[controller.modify] = controller.values?.[controller.state]??this[controller.modify];
                 }
         }
+        whenModified() {}
         clone() {
                 const myClone = new this.constructor();
                 myClone.name = this.name;
@@ -145,22 +152,59 @@ class WInstr {
                 return myClone
         }
 }
-class WSampler extends WInstr {
+class WPlayer extends WInstr {
         constructor() {
-                super("WSampler",[
+                super("WPlayer",[
                         new Controller("audio",knownAudioKeys()),
                         new Controller("pushToQueue",["Yes","No"])
                 ]);
         }
         whenPlayed() {
                 if (!knownAudio?.[this.audio]) return;
-                if (this.pushToQueue==="Yes") audioQueue.push(new Audio(knownAudio[this.audio].src));
+                if (this.pushToQueue==="Yes") audioQueue.push(knownAudio[this.audio].cloneNode(true));
                 else {
                         if (!knownAudio[this.audio].ended) {
                                 knownAudio[this.audio].pause();
                                 knownAudio[this.audio].currentTime = 0;
                         };
                         knownAudio[this.audio].play();
+                }
+        }
+}
+class WSampler extends WInstr {
+        constructor() {
+                super("WSampler",[
+                        new Controller("audio",knownAudioKeys()),
+                        new Controller("speed",[1],0,true,true),
+                        new Controller("volume",[1],0,true,true),
+                        new Controller("reverb",[0],0,true,true),
+                        new Controller("flanger",[0],0,true,true),
+                        new Controller("distortion",[0],0,true,true),
+                        new Controller("phaser",[0],0,true,true),
+                        new Controller("chorus",[0],0,true,true),
+                        new Controller("pushToQueue",["Yes","No"])
+                ]);
+        }
+        whenModified() {
+                if (!knownAudio?.[this.audio]) return;
+                this.src = knownAudio[this.audio].src;
+
+                const rate = this.speed ?? 1;
+                const vol = this.volumne ?? 1;
+                this.c = new Audio(this.src);
+                this.c.playbackRate = rate;
+                this.c.volume = vol;
+        }
+        whenPlayed() {
+                if (!knownAudio?.[this.audio]) return;
+                if (this.pushToQueue==="Yes") {
+                        audioQueue.push(this.c);
+                } else {
+                        if (!this.c.ended) {
+                                this.c.pause();
+                                this.c.currentTime = 0;
+                        };
+                        this.c.play();
                 }
         }
 }
@@ -190,6 +234,7 @@ class Song {
 }
 class Interface {
         instruments = {
+                "WPlayer": new WPlayer(),
                 "WSampler": new WSampler(),
                 "WConsole": new WConsole()
         };
@@ -234,19 +279,22 @@ class GUI {
                         const rack = this.interface.song.channelRack[index];
 
                         const name = document.createElement("span");
-                        name.addEventListener("click",async()=>{
+                        name.addEventListener("click",async(e)=>{
                                 let selectedController = await _createContextMenu(Object.values(rack.instrument.interface).map(idx=>{
                                         return {
                                                 name: idx.modify,
                                                 func: ()=>{}
                                         }
-                                }));
+                                }),e.clientX,e.clientY);
                                 if (selectedController === "Close") return;
                                 selectedController = rack.instrument.interface.findIndex(obj => obj.modify === selectedController);
                                 if (rack.instrument.interface[selectedController].oneValue) {
-                                        rack.instrument.interface[selectedController].values[0] = await prompt("Enter a value!");
+                                        let input = await prompt("Enter a value!");
+                                        if (rack.instrument.interface[selectedController].toNumber) input = isNaN(input)?rack.instrument.interface[selectedController].values[0]:Number(input);
+                                        rack.instrument.interface[selectedController].values[0] = input;
                                         this.updateChannelRack();
-                                        rack.instrument.updateFromControllerInterface()
+                                        rack.instrument.updateFromControllerInterface();
+                                        rack.instrument.whenModified();
                                         return;
                                 }
                                 let selectedModify = await _createContextMenu(rack.instrument.interface[selectedController].values.map(value=>{
@@ -254,11 +302,58 @@ class GUI {
                                                 name: value,
                                                 func: ()=>{}
                                         }
-                                }));
+                                }),e.clientX,e.clientY);
                                 if (selectedModify === "Close") return;
                                 selectedModify = rack.instrument.interface[selectedController].values.indexOf(selectedModify);
                                 rack.instrument.interface[selectedController].state = selectedModify;
                                 rack.instrument.updateFromControllerInterface();
+                                rack.instrument.whenModified();
+                                this.updateChannelRack();
+                        })
+                        name.addEventListener("contextmenu",async(e)=>{
+                                e.preventDefault();
+                                await _createContextMenu([
+                                        {
+                                                name: "Loop First 16 Steps",
+                                                func: ()=>rack.sequence=rack.sequence.map((v,k)=>k>=16?rack.sequence[k-16]:v)
+                                        },
+                                        {
+                                                name: "Loop Last 16 Steps",
+                                                func: ()=>rack.sequence=rack.sequence.map((v,k)=>k<16?rack.sequence[k+16]:v)
+                                        },
+                                        {
+                                                name: "Activate All 32 Steps",
+                                                func: ()=>rack.sequence=new Array(32).fill(true)
+                                        },
+                                        {
+                                                name: "Deactivate All 32 Steps",
+                                                func: ()=>rack.sequence=new Array(32).fill(false)
+                                        },
+                                        {
+                                                name: "Fill Every 2 Steps",
+                                                func: ()=>rack.sequence=rack.sequence.map((_,k)=>k%2===0)
+                                        },
+                                        {
+                                                name: "Fill Every 4 Steps",
+                                                func: ()=>rack.sequence=rack.sequence.map((_,k)=>k%4===0)
+                                        },
+                                        {
+                                                name: "Fill Every 8 Steps",
+                                                func: ()=>rack.sequence=rack.sequence.map((_,k)=>k%8===0)
+                                        },
+                                        {
+                                                name: "Use script",
+                                                func: async()=>{
+                                                        try {
+                                                                const f = new Function("sequence",await prompt("Enter JS function body to modify sequence! (e.g: return sequence.map(v=>!v);)",true));
+                                                                rack.sequence = f(rack.sequence);
+                                                                this.updateChannelRack();
+                                                        } catch (err) {
+                                                                await confirm("Error occured! "+err.message);
+                                                        }
+                                                }
+                                        }
+                                ],e.clientX,e.clientY)
                                 this.updateChannelRack();
                         })
 
@@ -267,7 +362,7 @@ class GUI {
                         for (let i in rack.sequence) {
                                 const b = document.createElement("button");
                                 b.style.border = "none";
-                                b.style.backgroundColor = this.seek===i?"#FFFFFF":"#abababff";
+                                b.style.backgroundColor = this.seek==i?"#FFFFFF":"#abababff";
                                 b.textContent = rack.sequence[i]?"X":"O";
 
                                 let temp = i;
@@ -300,6 +395,7 @@ class GUI {
                                         audioQueue[0].remove();
                                         audioQueue.shift();
                                 }
+                                this.updateChannelRack()
                                 this.seek = (this.seek+1)%32;
                                 this.seekSpan.textContent = "Step "+this.seek;
                         },((60/this.interface.song.BPM)/4)*1000)
@@ -307,6 +403,7 @@ class GUI {
                 this.rewindButton.addEventListener("click",()=>{
                         this.seek = 0;
                         this.seekSpan.textContent = "Step "+this.seek;
+                        this.updateChannelRack()
                 })
         }
 }
@@ -342,6 +439,13 @@ document.querySelector("#project").addEventListener("click",e=>{
                                 const input = await prompt("New name:");
                                 song.name = input!==""?input:song.name;
                                 document.querySelector("#project").textContent = song.name+" ...";
+                        }
+                },
+                {
+                        name: "Change Tempo",
+                        func: async()=>{
+                                const input = await prompt(`New BPM (Previous: ${song.BPM}):`);
+                                song.BPM = isNaN(input)?120:Number(input);
                         }
                 }
         ],x,y);
@@ -384,7 +488,7 @@ document.querySelector("#sounds").addEventListener("click",async(e)=>{
                 {
                         name: "Remove Sound",
                         func: async()=>{
-                                let selectedSound = await _createContextMenu(Object.keys(knownAudio).map(key=>{return {name:key,func:()=>{}}}));
+                                let selectedSound = await _createContextMenu(Object.keys(knownAudio).map(key=>{return {name:key,func:()=>{}}}),e.clientX,e.clientY);
                                 if (selectedSound === "Close") return;
                                 delete knownAudio[selectedSound];
                                 interface_.update$$knownAudio();
